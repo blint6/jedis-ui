@@ -75,11 +75,6 @@ function JedisComponent(path, data, options) {
             cb && cb(err, node);
         });
     };
-
-    function _handleState(state) {
-        if (typeof this.class.handleState === 'function')
-            return this.class.handleState.call(this, state);
-    }
 }
 
 JedisComponent.prototype._render = function (j) {
@@ -133,8 +128,8 @@ Jedis.prototype.render = function () {
     });
 };
 
-Jedis.prototype.push = function (payload) {
-    Object.keys(payload).forEach(path => this.component.index[path].setState(payload[path], true));
+Jedis.prototype.dispatch = function (payload) {
+    this.component.index[payload.path].setState(payload.state, true);
 };
 
 module.exports = {

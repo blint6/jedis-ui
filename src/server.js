@@ -1,35 +1,25 @@
+let EventEmitter = require('events').EventEmitter;
 let Promise = require('rsvp').Promise;
-let JedisComponent = require('./lib/component');
-let JedisElement = require('./lib/element');
+let Component = require('./lib/component');
+let ComponentContext = require('./lib/componentContext');
 
-function applyTree(app, node, path = '', i = 0) {
-    path = path + '/' + i;
-
-    app.component.index[path] = node;
-    app.component.path[node] = path;
-
-    if (node.server && typeof node.server === 'function') {
-        node.server(app);
-    }
-
-    node.props.children.forEach((child, j) => applyTree(app, child, path, j));
-    return node;
-}
-
-class Jedis {
+class Jedis extends EventEmitter {
     constructor(tree, options) {
         options = options || {};
 
+        EventEmitter.call(this);
         this.component = {
             index: {},
             path: {}
         };
-        this.component.tree = applyTree(this, tree);
+        this.component.tree = this._applyTree(tree);
     }
 
-    push(payload) {
+    dispatch(payload) {
+        // Context resolver needed to pass the context abstract object? Or simply remove app downwards dispatch ability?
         let context = payload.context,
-            component = this.component.index[payload.path];
+            component = this.component.index[payload.path],
+            componentCtx = new ComponentContext(component, context, state);
 
         if (component) {
             return Promise.resolve(component.props.stateResolver.resolveState(context))
@@ -39,15 +29,10 @@ class Jedis {
                     else
                         return state;
                 })
-                .then(state => component._handleState(state))
+                .then(state => componentCtx.setState(state))
                 .then(newState => {
                     if (newState !== undefined)
-                        return Promise.resolve(component.props.stateResolver.setState(context, newState))
-                            .then(() => ({
-                                path: payload.path,
-                                context: context,
-                                state: newState
-                            }));
+                        return Promise.resolve(component.props.stateResolver.setState(context, newState));
                 });
         } else {
             console.log('WARN', `App has no component at path ${payload.path}`);
@@ -58,6 +43,28 @@ class Jedis {
     pathOf(component) {
         return this.component.path[component];
     }
+
+    _applyTree(node, path = '', i = 0) {
+        path = path + '/' + i;
+
+        this.component.index[path] = node;
+        this.component.path[node] = path;
+
+        // Relay component updates to app level
+        node.on('newState', (context, newState) => this.emit('newState', context, {
+            path: path,
+            state: newState
+        }));
+
+        // Component init
+        if (node.server && typeof node.server === 'function') {
+            node.server(this);
+        }
+
+        // Recurse in children
+        node.props.children.forEach((child, j) => this._applyTree(child, path, j));
+        return node;
+    }
 }
 
 Jedis.createPage = function createPage(tree, options) {
@@ -65,11 +72,7 @@ Jedis.createPage = function createPage(tree, options) {
 };
 
 Jedis.createComponent = function createComponent(componentClass, props, ...children) {
-    return new JedisComponent(componentClass, props, children);
-};
-
-Jedis.element = function j(element, attrs, ...children) {
-    return new JedisElement(element, attrs, children);
+    return new Component(componentClass, props, children);
 };
 
 export

@@ -1,10 +1,13 @@
+let EventEmitter = require('events').EventEmitter;
+let ComponentContext = require('./componentContext');
+
 let returnObject = (() => ({}));
 let defaultStateResolver = {
     resolveState: returnObject,
-    setState: function () {}
+    setState: function() {}
 };
 
-class JedisComponent {
+class Component extends EventEmitter {
     constructor(componentClass, props, children) {
         this.class = componentClass;
         this.class.client = this.class.client || {};
@@ -15,10 +18,9 @@ class JedisComponent {
         this.props.stateResolver = this.props.stateResolver || defaultStateResolver;
     }
 
-    _handleState(state) {
-        if (typeof this.class.handleState === 'function')
-            return this.class.handleState.call(this, state);
+    context(context) {
+        return new ComponentContext(this, context);
     }
 }
 
-export default JedisComponent;
+module.exports = Component;

@@ -61,6 +61,6 @@ gulp.task('test', ['transpile'], function() {
 
 gulp.task('watch', function() {
     gulp.start('transpile', 'copy');
-    gulp.watch(paths.app, ['transpile']);
+    gulp.watch(paths.js, ['transpile']);
     gulp.watch([paths.asset, paths.pkgasset], ['copy']);
 });
