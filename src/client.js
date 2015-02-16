@@ -1,15 +1,16 @@
 let defRenderer = {
-    render: function (component, cb) {
+    render: function(component) {
         let oldNode = this.node,
             parent = this.node && this.node.parentNode;
 
-        let j = function (name, props, children) {
-            let el = oldNode || document.createElement(name);
+        let j = function(name, props, ...children) {
+            let el = document.createElement(name);
+            Object.keys(props || []).forEach(prop => el.setAttribute(prop, props[prop]));
 
-            if (typeof children === 'string')
-                el.textContent = children;
+            if (children.length && typeof children[0] === 'string')
+                el.textContent = children[0];
             else
-                el.childNodes = (children || []);
+                (children || []).forEach(child => el.appendChild(child));
 
             return el;
         };
@@ -23,15 +24,15 @@ let defRenderer = {
                 parent.appendChild(this.node);
         }
 
-        cb(null, this.node);
+        return this.node;
     }
 };
 
-let defPub = function () {
+let defPub = function() {
     console.log('WARN', 'No publish defined (impossible to communicate with the server)');
 };
 
-let comparePaths = function (a, b) {
+let comparePaths = function(a, b) {
     let aSplit = a.split(/\//g),
         bSplit = b.split(/\//g);
 
@@ -47,7 +48,7 @@ let comparePaths = function (a, b) {
     if (bSplit.length) return 1;
 };
 
-let extendState = function (newState) {
+let extendState = function(newState) {
     for (let k in (newState || {}))
         this.state[k] = newState[k];
 };
@@ -61,8 +62,9 @@ function JedisComponent(path, data, options) {
     let renderer = options.renderer || defRenderer,
         pub = options.pub || defPub;
 
-    this.setState = function (newState, localOnly, cb) {
-        extendState.call(this, newState);
+    this.setState = function(newState, localOnly, cb) {
+        //extendState.call(this, newState);
+        renderer.setState(this, newState);
 
         if (!localOnly)
             pub(path, newState);
@@ -70,14 +72,12 @@ function JedisComponent(path, data, options) {
         return this.forceUpdate(cb);
     };
 
-    this.forceUpdate = function (cb) {
-        renderer.render(this, function (err, node) {
-            cb && cb(err, node);
-        });
+    this.forceUpdate = function() {
+        return renderer.render(this);
     };
 }
 
-JedisComponent.prototype._render = function (j) {
+JedisComponent.prototype._render = function(j) {
     if (typeof this.class.render === 'function')
         return this.class.render.call(this, j);
 };
@@ -122,18 +122,16 @@ function Jedis(index, options) {
     });
 }
 
-Jedis.prototype.render = function () {
-    this.component.tree.forceUpdate(function (err, node) {
-        document.getElementById('body').appendChild(node);
-    });
+Jedis.prototype.render = function() {
+    return this.component.tree.forceUpdate();
 };
 
-Jedis.prototype.dispatch = function (payload) {
+Jedis.prototype.dispatch = function(payload) {
     this.component.index[payload.path].setState(payload.state, true);
 };
 
 module.exports = {
-    createApp: function (index) {
-        return new Jedis(index);
+    createApp: function(index, options) {
+        return new Jedis(index, options);
     }
 };
