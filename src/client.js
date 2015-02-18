@@ -1,36 +1,4 @@
-let defRenderer = {
-    render: function(component) {
-        let oldNode = this.node,
-            parent = this.node && this.node.parentNode;
-
-        let j = function(name, props, ...children) {
-            let el = document.createElement(name);
-            Object.keys(props || []).forEach(prop => el.setAttribute(prop, props[prop]));
-
-            if (children.length && typeof children[0] === 'string')
-                el.textContent = children[0];
-            else
-                (children || []).forEach(child => el.appendChild(child));
-
-            return el;
-        };
-
-        this.node = component._render(j);
-
-        if (parent) {
-            if (oldNode)
-                parent.replaceChild(this.node, oldNode);
-            else
-                parent.appendChild(this.node);
-        }
-
-        return this.node;
-    }
-};
-
-let defPub = function() {
-    console.log('WARN', 'No publish defined (impossible to communicate with the server)');
-};
+let JedisComponent = require('./lib/component.cli');
 
 let comparePaths = function(a, b) {
     let aSplit = a.split(/\//g),
@@ -48,40 +16,6 @@ let comparePaths = function(a, b) {
     if (bSplit.length) return 1;
 };
 
-let extendState = function(newState) {
-    for (let k in (newState || {}))
-        this.state[k] = newState[k];
-};
-
-function JedisComponent(path, data, options) {
-    this.class = data.class;
-    this.props = data.props || {};
-    this.props.children = [];
-    this.state = data.class.getInitialState && data.class.getInitialState() || {};
-
-    let renderer = options.renderer || defRenderer,
-        pub = options.pub || defPub;
-
-    this.setState = function(newState, localOnly, cb) {
-        //extendState.call(this, newState);
-        renderer.setState(this, newState);
-
-        if (!localOnly)
-            pub(path, newState);
-
-        return this.forceUpdate(cb);
-    };
-
-    this.forceUpdate = function() {
-        return renderer.render(this);
-    };
-}
-
-JedisComponent.prototype._render = function(j) {
-    if (typeof this.class.render === 'function')
-        return this.class.render.call(this, j);
-};
-
 function Jedis(index, options) {
     options = options || {};
 
@@ -90,7 +24,7 @@ function Jedis(index, options) {
         path: {}
     };
 
-    let createComponent = ((path, component) => new JedisComponent(path, component, options)),
+    let createComponent = ((path, component) => new JedisComponent(path, component, options.mixins)),
         orderedKeys = Object.keys(index).sort(comparePaths),
         rootPath = orderedKeys.shift();
 
@@ -122,12 +56,13 @@ function Jedis(index, options) {
     });
 }
 
-Jedis.prototype.render = function() {
-    return this.component.tree.forceUpdate();
+Jedis.prototype.render = function(options) {
+    let rootComponent = this.component.tree;
+    return rootComponent.render(options);
 };
 
 Jedis.prototype.dispatch = function(payload) {
-    this.component.index[payload.path].setState(payload.state, true);
+    this.component.index[payload.path].setState(payload.state, false);
 };
 
 module.exports = {
