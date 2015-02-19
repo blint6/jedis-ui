@@ -62,7 +62,8 @@ Jedis.prototype.render = function(options) {
 };
 
 Jedis.prototype.dispatch = function(payload) {
-    this.component.index[payload.path].setState(payload.state, false);
+    return payload.j.map(componentCtx =>
+        this.component.index[componentCtx.path].setState(componentCtx.state, false));
 };
 
 module.exports = {

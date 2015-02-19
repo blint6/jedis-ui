@@ -1,25 +1,26 @@
 let Promise = require('rsvp').Promise;
+let extend = require('./tool/extend');
 
 class ComponentContext {
-    constructor(component, context, state) {
+    constructor(component, context) {
         this.component = component;
         this.context = context;
         this.props = component.props;
-        this.state = component.state;
+        this.privates = component.class.getInitialPrivates ? component.class.getInitialPrivates(context) : {};
+        this.state = component.class.getInitialState ? component.class.getInitialState(context) : {};
     }
 
-    setState(state) {
-        if (typeof this.component.class.handleState === 'function') {
-            return Promise.resolve(this.component.class.handleState.call(this, state))
-                .then(newState => {
-                    if (newState)
-                        this.component.emit('newState', this.context, newState);
+    handleState(state) {
+        if (typeof this.component.class.handleState === 'function')
+            return Promise.resolve(this.component.class.handleState.call(this, state));
+    }
 
-                    return newState;
-                });
-        }
+    setState(newState, publish = true) {
+        extend(this.state, newState);
+
+        if (publish)
+            this.component.emit('newState', this);
     }
 }
 
-export
-default ComponentContext;
+module.exports = ComponentContext;
