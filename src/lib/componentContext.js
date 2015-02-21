@@ -6,8 +6,10 @@ class ComponentContext {
         this.component = component;
         this.context = context;
         this.props = component.props;
-        this.privates = component.class.getInitialPrivates ? component.class.getInitialPrivates(context) : {};
-        this.state = component.class.getInitialState ? component.class.getInitialState(context) : {};
+        this.privates = component.class.getInitialPrivates ?
+            component.class.getInitialPrivates(context) : {};
+        this.state = component.class.getInitialState ?
+            component.class.getInitialState(context) : {};
     }
 
     handleState(state) {

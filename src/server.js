@@ -10,18 +10,10 @@ class Jedis extends EventEmitter {
         this.contextManager = options.contextManager;
         this.component = {
             index: {},
-            path: {}
+            name: {}
         };
 
-        this.component.tree = this._applyTree(tree);
-    }
-
-    pathOf(component) {
-        return this.component.path[component];
-    }
-
-    at(path) {
-        return this.component.index[path];
+        this.component.root = this._applyTree(tree);
     }
 
     mapPayload(payload, cb) {
@@ -33,16 +25,17 @@ class Jedis extends EventEmitter {
         ));
     }
 
-    _applyTree(node, path = '', i = 0) {
-        path = path + '/' + i;
+    _applyTree(node, refs = {}) {
+        refs[node.class.name] = refs[node.class.name] ? refs[node.class.name] + 1 : 0;
+        let id = node.class.name + refs[node.class.name];
 
-        this.component.index[path] = node;
-        this.component.path[node] = path;
+        this.component.index[id] = node;
+        this.component.name[node] = id;
 
         // Relay component updates to app level
         node.on('newState', componentCtx => this.emit('newState', componentCtx.context, {
             j: [{
-                path: path,
+                id: id,
                 state: componentCtx.state
             }]
         }));
@@ -53,8 +46,12 @@ class Jedis extends EventEmitter {
         }
 
         // Recurse in children
-        node.props.children.forEach((child, j) => this._applyTree(child, path, j));
-        return node;
+        let children = node.props.children.map(child => this._applyTree(child, refs));
+
+        return {
+            id: id,
+            children: children
+        };
     }
 }
 

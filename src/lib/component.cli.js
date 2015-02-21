@@ -13,16 +13,22 @@ let defaultComponentMixin = [{
 
     _render: function() {},
 
+    _loadComponentClass: function(id) {
+        return id;
+    },
+
 }];
 
-function JedisComponent(path, data, mixins) {
-    this.class = data.class;
-    this.props = data.props || {};
-    this.props.children = [];
-    this.state = data.class.getInitialState && data.class.getInitialState() || {};
-    this.locals = data.class.getInitialLocals && data.class.getInitialLocals() || {};
-
+function JedisComponent(data, mixins) {
     mixIn(this, defaultComponentMixin.concat(mixins || []));
+
+    this.id = data.id;
+    this.class = this._loadComponentClass(this.id);
+    this.props = data.props || {};
+    this.state = this.class.getInitialState && this.class.getInitialState() || {};
+    this.locals = this.class.getInitialLocals && this.class.getInitialLocals() || {};
+
+    this.props.children = data.children.map(child => new JedisComponent(child, mixins));
 }
 
 JedisComponent.prototype.setState = function(newState, publish = true) {
