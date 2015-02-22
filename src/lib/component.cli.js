@@ -26,14 +26,14 @@ function JedisComponent(data, mixins) {
     mixIn(this, defaultComponentMixin.concat(mixins || []));
 
     this.id = data.id;
-    this.class = this._loadComponentClass(data.id);
+    this.class = this._loadComponentClass(data.id) || {};
     mixIn(this, [this.class]);
 
     this.props = data.props || {};
     this.state = data.state || {};
     this.locals = this.getInitialLocals && this.getInitialLocals() || {};
 
-    this.props.children = data.children.map(child => new JedisComponent(child, mixins));
+    this.children = data.children.map(child => new JedisComponent(child, mixins));
     Mixed.call(this, this.mixins || []);
 }
 

@@ -1,6 +1,5 @@
 let Promise = require('rsvp').Promise;
 let extend = require('./tool/extend');
-let AttributeReference = require('./tool/attributeReference');
 
 class ComponentContext {
     constructor(component, context) {
@@ -24,6 +23,7 @@ class ComponentContext {
         if (publish)
             this.component.emit('newState', this);
     }
+
 }
 
 module.exports = ComponentContext;

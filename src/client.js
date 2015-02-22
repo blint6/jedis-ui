@@ -11,7 +11,7 @@ function Jedis(root, options) {
 
     let assignIndex = (c => {
         this.component.index[c.id] = c;
-        c.props.children.forEach(assignIndex);
+        c.children.forEach(assignIndex);
     });
     assignIndex(this.component.root);
 }

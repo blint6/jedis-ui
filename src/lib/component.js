@@ -5,19 +5,33 @@ let extend = require('./tool/extend');
 
 class Component extends EventEmitter {
     constructor(componentClass, props, children) {
-        this.class = extend({}, componentClass);
-        this.class.client = this.class.client || {};
-        this.class.resource = this.class.resource || {};
-        this.props = props || {};
-        this.props.children = children || [];
+        componentClass = componentClass || {};
 
-        Mixed.call(this.class, this.class.mixins || []);
+        this.name = componentClass.name || 'anonymous';
+        this.class = extend({}, componentClass.service);
+        this.client = componentClass.client || {};
+        this.resource = componentClass.resource || {};
+        this.props = props || {};
+        this.children = children || [];
+
+        let serviceMixins = [],
+            clientMixins = [];
+
+        (componentClass.mixins || []).forEach(mixin => {
+            if (mixin.service)
+                serviceMixins.push(mixin.service);
+            if (mixin.client)
+                clientMixins.push(mixin.client);
+        });
+
+        Mixed.call(this.class, serviceMixins);
+        Mixed.call(this.client, clientMixins);
     }
 
     getClientResource(media) {
         return {
-            base: this.class.client[media],
-            mixins: this.class.mixGetAllMixed('client.' + media)
+            base: this.client[media],
+            mixins: this.client.mixGetAllMixed(media)
         };
     }
 
