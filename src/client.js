@@ -17,7 +17,7 @@ function Jedis(root, options) {
 }
 
 Jedis.prototype.render = function(options) {
-    return this.component.root.render(options);
+    return this.component.root._render(options);
 };
 
 Jedis.prototype.dispatch = function(payload) {
