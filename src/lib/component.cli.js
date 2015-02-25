@@ -1,4 +1,4 @@
-let extend = require('./tool/extend');
+let extend = require('extend');
 let mixIn = require('./tool/mixIn');
 let Mixed = require('./tool/Mixed');
 
@@ -27,7 +27,7 @@ function JedisComponent(data, mixins) {
 
     this.id = data.id;
     this.class = this._loadComponentClass(data.id) || {};
-    mixIn(this, [this.class]);
+    extend(true, this, this.class);
 
     this.props = data.props || {};
     this.state = data.state || {};

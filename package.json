@@ -24,6 +24,7 @@
     "mixin-js": "~0.1.5"
   },
   "dependencies": {
-    "rsvp": "~3.0.16"
+    "rsvp": "~3.0.16",
+    "extend": "~2.0.0"
   }
 }
