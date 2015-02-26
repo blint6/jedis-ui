@@ -1,14 +1,17 @@
+let Symbol = require('es6-symbol');
 let extend = require('./extend');
 
+let sMixed = Symbol('mixed');
+
 module.exports = function Mixed(mixins) {
-    this.mixin = {};
+    this[sMixed] = {};
     let mixedMethods = {};
 
     mixins.forEach(mixin => {
         if (typeof mixin === 'object') {
             for (let def in mixin) {
-                this.mixin[def] = this.mixin[def] || [];
-                this.mixin[def].push(mixin[def]);
+                this[sMixed][def] = this[sMixed][def] || [];
+                this[sMixed][def].push(mixin[def]);
 
                 if (typeof mixin[def] === 'function') {
                     mixedMethods[def] = mixedMethods[def] || [];
@@ -45,8 +48,8 @@ module.exports = function Mixed(mixins) {
         let lastResult;
 
         // Execute mixin functions in order
-        if (this.mixin[fnName]) {
-            this.mixin[fnName].forEach(fn => {
+        if (this[sMixed][fnName]) {
+            this[sMixed][fnName].forEach(fn => {
                 if (typeof fn === 'function')
                     lastResult = fn.apply(obj, args);
             });
@@ -71,9 +74,9 @@ module.exports = function Mixed(mixins) {
             return res;
 
         // Or find latest prop from mixins
-        if (this.mixin[classProp] && this.mixin[classProp].length) {
-            for (let p = this.mixin[classProp].length - 1; p >= 0; p -= 1) {
-                let prop = this.mixin[classProp][p];
+        if (this[sMixed][classProp] && this[sMixed][classProp].length) {
+            for (let p = this[sMixed][classProp].length - 1; p >= 0; p -= 1) {
+                let prop = this[sMixed][classProp][p];
 
                 // Return the prop if res is under construction
                 if (typeof prop !== 'object') {
@@ -83,7 +86,7 @@ module.exports = function Mixed(mixins) {
 
                 res = extend((res || {}), prop);
             }
-            return this.mixin[classProp][this.mixin[classProp].length - 1];
+            return this[sMixed][classProp][this[sMixed][classProp].length - 1];
         }
     };
 
@@ -105,7 +108,7 @@ module.exports = function Mixed(mixins) {
                 return obj[subPath[0]];
         });
 
-        (this.mixin[propName] || []).forEach(obj => {
+        (this[sMixed][propName] || []).forEach(obj => {
             let prop = lookForProp(obj, path);
 
             if (prop !== undefined) {
