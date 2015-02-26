@@ -9,6 +9,7 @@ var mocha = require('gulp-mocha');
 var changed = require('gulp-changed');
 var watch = require('gulp-watch');
 var to5 = require('gulp-6to5');
+var sourcemaps = require('gulp-sourcemaps');
 
 var getBundleName = function() {
     var version = require('./package.json').version;
@@ -33,10 +34,12 @@ gulp.task('transpile', function() {
             base: 'src'
         })
         .pipe(changed('build'))
+        .pipe(sourcemaps.init())
         .pipe(insert.prepend('\'use strict\';\n'))
         .pipe(jshint())
         .pipe(jshint.reporter('default'))
         .pipe(to5())
+        .pipe(sourcemaps.write())
         .pipe(gulp.dest('build'));
 });
 
