@@ -1,5 +1,5 @@
 let Promise = require('rsvp').Promise;
-let extend = require('./tool/extend');
+let extend = require('extend');
 
 class ComponentContext {
     constructor(component, context) {
@@ -18,7 +18,7 @@ class ComponentContext {
     }
 
     setState(newState, publish = true) {
-        extend(this.state, newState);
+        extend(true, this.state, newState);
 
         if (publish)
             this.component.emit('newState', this);

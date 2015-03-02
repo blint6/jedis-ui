@@ -1,60 +1,63 @@
-let Symbol = require('es6-symbol');
 let extend = require('extend');
-let Mixed = require('./tool/Mixed');
+let mixin = require('./tool/mixin');
 
 let defaultComponentMixin = [{
 
-    publish: function( /*newState*/ ) {
-        console.log('WARN', 'No _publish defined (impossible to communicate with the server)');
-    },
+    name: 'default',
 
-    setState: function() {},
+    class: {
+        publish: function( /*newState*/ ) {
+            console.log('WARN', 'No _publish defined (impossible to communicate with the server)');
+        },
 
-    setLocals: function() {},
+        setState: function() {},
 
-    // render: function() {},
+        setLocals: function() {},
 
-    loadComponentClass: function(id) {
-        return id;
-    },
+        // render: function() {},
 
+        loadComponentClass: function(id) {
+            return id;
+        },
+    }
 }];
 
-function JedisComponent(data, mixins) {
-    let priv = {};
-    this[JedisComponent.pKey] = priv;
-    Mixed.call(priv, defaultComponentMixin.concat(mixins || []));
+function JedisComponent(app, data, mixins) {
+    mixin(this, defaultComponentMixin.concat(mixins || []));
 
     this.id = data.id;
-    priv.class = priv.loadComponentClass(data.id) || {};
-    extend(true, this, priv.class);
+    extend(true, this, this.loadComponentClass(data.id) || {});
+    mixin(this, this.mixins || []);
 
     this.props = data.props || {};
-    this.state = data.state || {};
     this.locals = this.getInitialLocals && this.getInitialLocals() || {};
 
-    this.children = data.children.map(child => new JedisComponent(child, mixins));
-    Mixed.call(this, this.mixins || []);
+    if (typeof this.componentWillMount === 'function')
+        this.componentWillMount.call(this, app);
+
+    this.state = data.state || {};
+    this.children = (data.children || []).map(child => new JedisComponent(app, child, mixins));
+
+    if (typeof this.componentDidMount === 'function')
+        this.componentDidMount.call(this, app);
 }
 
 JedisComponent.prototype.setState = function(newState, publish = true) {
     extend(this.state, newState);
 
     if (publish)
-        this[JedisComponent.pKey].publish.call(this, newState);
+        this.publish(newState);
 
-    return this[JedisComponent.pKey].setState.call(this, newState);
+    return this.setState(newState);
 };
 
 JedisComponent.prototype.setLocals = function(newLocals) {
     extend(this.locals, newLocals);
-    return this[JedisComponent.pKey].setLocals.call(this, newLocals);
+    return this.setLocals(newLocals);
 };
 
-JedisComponent.prototype.render = function() {
-    return this[JedisComponent.pKey].render.call(this);
+JedisComponent.prototype.render = function(options) {
+    return this.render(options);
 };
-
-JedisComponent.pKey = Symbol('ala');
 
 module.exports = JedisComponent;
