@@ -9,8 +9,7 @@ class Jedis extends EventEmitter {
         EventEmitter.call(this);
         this.contextManager = options.contextManager;
         this.component = {
-            index: {},
-            name: {}
+            index: {}
         };
 
         this.component.root = this._applyTree(tree);
@@ -28,7 +27,7 @@ class Jedis extends EventEmitter {
     makePayload(componentCtx) {
         return {
             j: [{
-                id: this.component.name[componentCtx.component],
+                id: componentCtx.component._id,
                 state: componentCtx.state
             }]
         };
@@ -39,7 +38,7 @@ class Jedis extends EventEmitter {
         let id = node.name + refs[node.name];
 
         this.component.index[id] = node;
-        this.component.name[node] = id;
+        node._id = id;
 
         // Relay component updates to app level
         node.on('newState', componentCtx => this.emit('newState', componentCtx.context, this.makePayload(componentCtx)));
